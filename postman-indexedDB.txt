@@ -1,0 +1,40 @@
+var cnn = indexedDB.open("postman-app",220);
+
+cnn.onsuccess = (e) => {
+    var db = e.target.result;
+    var transaction = db.transaction(["requests"], "readwrite");
+    var objectStore = transaction.objectStore("requests");
+
+    var cursor = objectStore.openCursor();
+
+    cursor.onsuccess = e => {
+        const cursor = e.target.result;
+        if (cursor) {
+            const value = cursor.value;
+
+            if (cursor.value.url.includes("{{baseUrl}}")) {
+                value.url = value.url.replace("baseUrl", "host");
+
+                cursor.update(value);
+
+                console.log(value.url);
+            }
+
+            const headers = value.headerData;
+
+            for(i in headers)
+                if (headers[i].key === "client_id")
+                    headers[i].value = "{{client-id}}"
+                else if (headers[i].key === "access_token")
+                    headers[i].value = "{{access-token}}"
+                else if (headers[i].key === "channel_name")
+                    headers[i].value = "{{channel-name}}"
+                else if (headers[i].key === "user_client")
+                    headers[i].value = "{{user-client}}"
+
+            cursor.update(value);
+
+            cursor.continue();
+        }
+    }
+}
